@@ -6,7 +6,7 @@ import requests, json, threading, socketserver
 import subprocess
 
 tab_c = {}
-
+    
 
 from threading import Timer,Thread,Event
 
@@ -41,6 +41,25 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 		super(MyHandler, self).__init__(*args, **kwargs)
 
 	def do_GET(self):
+		
+		print("##################")
+		ip = str(self.client_address[0])
+		
+		if str(ip) in tab_c:
+			if tab_c[ip] > 50:
+				cmd = "ufw deny in from " + ip
+				process = subprocess.Popen(cmd.split())
+				tab_c[ip] = 0
+				return
+				
+			tab_c[ip] = tab_c[ip] + 1
+			print(ip, " : requêtes effectuées : ", tab_c[ip])
+			
+		else:
+			tab_c[ip] = 1
+			print(ip, " : requêtes effectuées : ", tab_c[ip])
+			
+		print("##################")
 
 		print("Infos client: IP:", self.client_address[0], "Port :", self.client_address[1])
 		print("GET fait sur le port ", self.server.server_port)
@@ -555,16 +574,16 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 	def do_POST(self):
 		print("##################")
 		ip = str(self.client_address[0])
-
+		
 		if str(ip) in tab_c:
 			tab_c[ip] = tab_c[ip] + 1
 			print(ip, " : requêtes effectuées : ", tab_c[ip])
 		else:
 			tab_c[ip] = 1
 			print(ip, " : requêtes effectuées : ", tab_c[ip])
-
+			
 		print("##################")
-
+		
 		print("Infos client: IP:", self.client_address[0], "Port :", self.client_address[1])
 		print("POST fait sur le port ", self.server.server_port)
 
@@ -716,15 +735,15 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 def serve_on_port(port):
 	server = ThreadingHTTPServer(("", port), MyHandler)
 	server.serve_forever()
-
-
-
+	
+	
+	
 def timer_on_port(port):
 	t = perpetualTimer(5,printer)
 	t.start()
-
-
-
+	
+	
+	
 
 def init_capt_threads():
 	data_b = sqlite3.connect('logement.db')
@@ -765,4 +784,4 @@ class my_thread():
 if __name__ == '__main__':
 	threading.Thread(target = serve_on_port, args=[5535]).start()
 	init_capt_threads()
-	#threading.Thread(target = timer_on_port, args=[5534]).start()
+	threading.Thread(target = timer_on_port, args=[5534]).start()
